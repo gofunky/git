@@ -444,5 +444,5 @@ workflows:
         <<: *master_filter
         <<: *git_job
         tags: "gofunky/git:latest,gofunky/git:daily"
-  build_daily:
+  #build_daily:
     # TODO
