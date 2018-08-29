@@ -196,7 +196,7 @@ orbs:
             command: |
               mkdir -pv ./env
               echo "0.1.0" > ./env/ENVORB_VERSION.env
-              echo "for file in \"\$(find ${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';')\"; do export \${file}=\"\$(cat $PWD/env/\${file}.env)\"; done" > ./env/load.sh
+              echo "for file in \"\$(find ${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';')\"; do export \${file}=\"\`cat \"$PWD/env/\${file}.env\"`\"; done" > ./env/load.sh
               chmod +x ./env/load.sh
 
       value:
@@ -209,6 +209,7 @@ orbs:
             command: |
               source ./env/load.sh
               export << parameters.variable >>="<< parameters.value >>"
+              echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
 
       cmd:
@@ -221,6 +222,7 @@ orbs:
             command: |
               source ./env/load.sh
               export << parameters.variable >>=$(<< parameters.cmd >>)
+              echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
 
       http:
@@ -233,6 +235,7 @@ orbs:
             command: |
               source ./env/load.sh
               export << parameters.variable >>=$(wget -O - << parameters.address >>)
+              echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
 
       match_version:
@@ -244,6 +247,7 @@ orbs:
             command: |
               source ./env/load.sh
               << parameters.variable >>=$(${<< parameters.variable >>} | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
+              echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
 
       complete:
