@@ -168,6 +168,8 @@ orbs:
           <<: *alpine_params
         docker:
         - image: gofunky/git:latest # TODO
+        environment:
+          IFS: "\n"
     commands:
       prepare:
         parameters:
