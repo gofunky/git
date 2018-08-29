@@ -743,20 +743,20 @@ master_filter: &master_filter
 
 set_git_version: &set_git_version
   attach: true
-    alpine_version: "3.8"
-    variable: GIT_VERSION
-    prepare:
-    - run:
-        name: Update git
-        command: |
-          apk add --no-cache --upgrade git
-    cmd: git --version
+  alpine_version: "3.8"
+  variable: GIT_VERSION
+  prepare:
+  - run:
+      name: Update git
+      command: |
+        apk add --no-cache --upgrade git
+  cmd: git --version
 
 set_alpine_version: &set_alpine_version
   attach: true
-    alpine_version: "3.8"
-    variable: ALPINE_VERSION
-    value: "3.8"
+  alpine_version: "3.8"
+  variable: ALPINE_VERSION
+  value: "3.8"
 
 version: 2.1
 workflows:
