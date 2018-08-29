@@ -168,8 +168,6 @@ orbs:
           <<: *alpine_params
         docker:
         - image: gofunky/git:latest # TODO
-        environment:
-          IFS: "\n"
     commands:
       prepare:
         parameters:
@@ -198,7 +196,7 @@ orbs:
             command: |
               mkdir -pv ./env
               echo "0.1.0" > ./env/ENVORB_VERSION.env
-              echo "for file in \"\$(find ${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';')\"; do export \${file}=\"\$(cat ${PWD}/env/\${file}.env)\"; done" > ./env/load.sh
+              echo "OLD_IFS=\${IFS} && IFS=';' && for file in \$(find \${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';' | tr '\n' ';'); do export \${file}=\"\$(cat \${PWD}/env/\${file}.env)\"; done && IFS=\${OLD_IFS}" > ./env/load.sh
               chmod +x ./env/load.sh
 
       value:
