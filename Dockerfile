@@ -1,4 +1,5 @@
-FROM alpine:3.8
+ARG ALPINE
+FROM alpine:${ALPINE}
 MAINTAINER matfax <mat@fax.fyi>
 
 ARG VERSION

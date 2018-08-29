@@ -732,7 +732,7 @@ git_job: &git_job
   docker_version: 18.06.1
   login: docker login -u $DOCKER_USR -p $DOCKER_PWD
   use_args: true
-  args: "VERSION=latest"
+  args: "VERSION=latest,ALPINE=${ALPINE_VERSION}"
   cache: true
 
 master_filter: &master_filter
@@ -740,6 +740,23 @@ master_filter: &master_filter
     branches:
       only:
       - master
+
+set_git_version: &set_git_version
+  attach: true
+    alpine_version: "3.8"
+    variable: GIT_VERSION
+    prepare:
+    - run:
+        name: Update git
+        command: |
+          apk add --no-cache --upgrade git
+    cmd: git --version
+
+set_alpine_version: &set_alpine_version
+  attach: true
+    alpine_version: "3.8"
+    variable: ALPINE_VERSION
+    value: "3.8"
 
 version: 2.1
 workflows:
@@ -754,21 +771,35 @@ workflows:
     jobs:
     - envorb/cmd_version:
         name: set_git_version
-        attach: true
-        alpine_version: "3.8"
-        variable: GIT_VERSION
-        prepare:
-          - run:
-              name: Update git
-              command: |
-                apk add --no-cache --upgrade git
-        cmd: git --version
+        <<: *set_git_version
+    - envorb/value:
+        name: set_alpine_version
+        <<: *set_alpine_version
     - dockerorb/build_test_push:
         name: build_latest
         <<: *master_filter
         <<: *git_job
-        tags: "gofunky/git:${GIT_VERSION},gofunky/git:latest"
+        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         requires:
           - set_git_version
-  #build_daily:
-    # TODO
+          - set_alpine_version
+  build_daily:
+    triggers:
+    - schedule:
+        cron: "0 0 * * *"
+        <<: *master_filter
+    jobs:
+    - envorb/cmd_version:
+        name: daily_set_git_version
+        <<: *set_git_version
+    - envorb/value:
+        name: daily_set_alpine_version
+        <<: *set_alpine_version
+    - dockerorb/build_test_push:
+        name: daily_build_latest
+        <<: *master_filter
+        <<: *git_job
+        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable,gofunky/git:daily"
+        requires:
+        - set_git_version
+        - set_alpine_version
