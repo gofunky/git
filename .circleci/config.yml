@@ -1,0 +1,448 @@
+attach_params: &attach_params
+  attach:
+    description: "Attach workspace"
+    type: boolean
+    default: false
+  attach_at:
+    description: "Where to attach the workspace"
+    type: string
+    default: "."
+
+attach_args: &attach_args
+  attach: << parameters.attach >>
+  attach_at: << parameters.attach_at >>
+
+docker_login_params: &docker_login_params
+  login:
+    description: "Login command to your repository (using environment variables from your secure context)"
+    type: string
+    default: echo "Login is UNSPECIFIED"
+
+docker_arg_params: &docker_arg_params
+  # Remove this once CircleCI-Public/config-preview-sdk#15 is merged
+  use_args:
+    description: "Enable if you pass args"
+    type: boolean
+    default: false
+  args:
+    description: "Either none, one or multiple comma-separated Docker build arguments to apply"
+    type: string
+    default: ""
+
+docker_build_params: &docker_build_params
+  file:
+    description: "Path to the Dockerfile"
+    type: string
+    default: "Dockerfile"
+  cache:
+    description: "Use image layer cache"
+    type: boolean
+    default: false
+  prepare:
+    description: "Prepare steps after checkout (e.g., chmod)"
+    type: steps
+    default: []
+  path:
+    description: "Build path"
+    type: string
+    default: "."
+  add_labels:
+    description: "Add default schema labels"
+    type: boolean
+    default: false
+  base_tag:
+    description: "Docker base tag to use"
+    type: string
+    default: app
+
+docker_tags_params: &docker_tags_params
+  tags:
+    description: "Either one or multiple comma-separated Docker tags to apply and push"
+    type: string
+    default: ""
+
+docker_build_args: &docker_build_args
+  <<: *attach_args
+  # Remove this once CircleCI-Public/config-preview-sdk#15 is merged
+  use_args: << parameters.use_args >>
+  args: << parameters.args >>
+  file: << parameters.file >>
+  cache: << parameters.cache >>
+  prepare: << parameters.prepare >>
+  path: << parameters.path >>
+  base_tag: << parameters.base_tag >>
+  add_labels: << parameters.add_labels >>
+
+docker_version_params: &docker_version_params
+  docker_version:
+    description: "Docker version"
+    type: string
+    default: stable
+
+readmyhub_version_params: &readmyhub_version_params
+  version:
+    description: "Version of the readmyhub Docker image"
+    type: string
+    default: stable
+  file:
+    description: "Path to the README.md file"
+    type: string
+    default: "README.md"
+  organization:
+    description: "Docker Hub organization or user name"
+    type: string
+    default: ""
+  repository:
+    description: "Docker Hub repository name"
+    type: string
+    default: ""
+
+readmyhub_update_params: &readmyhub_update_params
+  derive_repo:
+    description: "Enable to automatically derive the Docker Hub repository from the GitHub repository"
+    type: boolean
+    default: true
+
+orbs:
+  readmyhuborb:
+    executors:
+      default:
+        parameters:
+          <<: *readmyhub_version_params
+        docker:
+        - image: gofunky/readmyhub:<< parameters.version >>-git
+        working_directory: /data
+        environment:
+          README_PATH: /data/<< parameters.file >>
+          IFS: "/"
+          DOCKERHUB_ORG: << parameters.organization >>
+          DOCKERHUB_REPO: << parameters.repository >>
+    commands:
+      update:
+        parameters:
+          <<: *readmyhub_update_params
+        steps:
+        - checkout
+        - run:
+            name: Check DOCKER_USR
+            command: |
+              if [ -z "$DOCKER_USR" ]; then
+                echo "ERROR: DOCKER_USR is not set!"
+                exit 127
+              fi
+        - run:
+            name: Check DOCKER_PWD
+            command: |
+              if [ -z "$DOCKER_PWD" ]; then
+                echo "ERROR: DOCKER_PWD is not set!"
+                exit 127
+              fi
+        - when:
+            condition: << parameters.derive_repo >>
+            steps:
+            - run:
+                name: Update README
+                command: |
+                  set -f
+                  URL=`git remote get-url origin`
+                  URL=`echo "$URL" | sed -e "s/^https:\/\///" -e "s/\.git//" | sed -e "s/^git@//"`
+                  URL=`echo "$URL" | sed -r 's/github.com:/github.com\//g'`
+                  set -- $URL
+                  DOCKERHUB_ORG=$2
+                  DOCKERHUB_REPO=$3
+                  export DOCKERHUB_USR=${DOCKER_USR}
+                  export DOCKERHUB_PWD=${DOCKER_PWD}
+                  node /app/index.js
+                  set +f
+        - unless:
+            condition: << parameters.derive_repo >>
+            steps:
+            - run:
+                name: Update README
+                command: |
+                  export DOCKERHUB_USR=${DOCKER_USR}
+                  export DOCKERHUB_PWD=${DOCKER_PWD}
+                  node /app/index.js
+    jobs:
+      update:
+        description: "Push the given README.md to the Docker Hub"
+        executor:
+          name: default
+          version: << parameters.version >>
+          file: << parameters.file >>
+          organization: << parameters.organization >>
+          repository: << parameters.repository >>
+        parameters:
+          <<: *readmyhub_version_params
+          <<: *readmyhub_update_params
+        steps:
+        - update:
+            derive_repo: << parameters.derive_repo >>
+
+  dockerorb:
+    executors:
+      default:
+        parameters:
+          <<: *docker_version_params
+        docker:
+        - image: docker:<< parameters.docker_version >>-git
+        working_directory: ~/app
+        environment:
+          IFS: ","
+    commands:
+      login:
+        parameters:
+          <<: *docker_login_params
+        steps:
+        - run:
+            name: "Login to your origin Docker repository"
+            command: << parameters.login >>
+      build:
+        parameters:
+          <<: *docker_arg_params
+          <<: *attach_params
+          <<: *docker_build_params
+        steps:
+        - checkout
+        - setup_remote_docker
+        - when:
+            condition: << parameters.attach >>
+            steps:
+            - attach_workspace:
+                at: << parameters.attach_at >>
+        - steps: << parameters.prepare >>
+        - when:
+            condition: << parameters.cache >>
+            steps:
+            - restore_cache:
+                keys:
+                - docker-<< parameters.path >>-<< parameters.file >>-<< parameters.base_tag >>-{{ .Branch }}
+                paths:
+                - /caches/<< parameters.base_tag >>.tar
+            - run:
+                name: Load Docker image layer cache
+                command: |
+                  set +o pipefail
+                  docker load -i /caches/<< parameters.base_tag >>.tar || true
+        - when:
+            condition: << parameters.use_args >>
+            # Use this instead once CircleCI-Public/config-preview-sdk#15 is merged
+            # matches: ['([a-zA-Z][\w]*=[\w-\/.:]+)(,[a-zA-Z][\w]*=[\w-\/.:]+)*', "<< parameters.args >>"]
+            steps:
+            - run:
+                name: Build Docker image with arguments and labels
+                command: |
+                  test ./env/load.sh -f && source ./env/load.sh
+                  buildarg=""
+                  args="<< parameters.args >><<# parameters.add_labels >>,BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"`,VCS_REF=`git rev-parse --short HEAD`<</ parameters.add_labels >>"
+                  for arg in $args; do
+                    buildarg="${buildarg} --build-arg ${arg}"
+                  done
+                  build="docker build ${buildarg} --cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>"
+                  eval $build
+        - unless:
+            condition: << parameters.use_args >>
+            # Use this instead once CircleCI-Public/config-preview-sdk#15 is merged
+            # matches: ['([a-zA-Z][\w]*=[\w-\/.:]+)(,[a-zA-Z][\w]*=[\w-\/.:]+)*', "<< parameters.args >>"]
+            steps:
+            - run:
+                name: Build Docker image without arguments and with labels
+                command: |
+                  test ./env/load.sh -f && source ./env/load.sh
+                  docker build <<# parameters.add_labels >>--build-arg BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"` --build-arg VCS_REF=`git rev-parse --short HEAD` <</ parameters.add_labels >>--cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>
+        - when:
+            condition: << parameters.cache >>
+            steps:
+            - run:
+                name: Save Docker image layer cache
+                command: |
+                  mkdir -p /caches
+                  docker save -o /caches/<< parameters.base_tag >>.tar << parameters.base_tag >>
+            - save_cache:
+                key: docker-<< parameters.path >>-<< parameters.file >>-<< parameters.base_tag >>-{{ .Branch }}-{{ epoch }}
+                paths:
+                - /caches/<< parameters.base_tag >>.tar
+      tag:
+        parameters:
+          <<: *docker_tags_params
+          base_tag:
+            description: "Docker base tag to use"
+            type: string
+            default: app
+        steps:
+        - run:
+            name: Add Docker tags
+            command: |
+              test ./env/load.sh -f && source ./env/load.sh
+              tags="<< parameters.tags >>"
+              for tag in $tags; do
+                docker tag << parameters.base_tag >> "$tag"
+              done
+      test:
+        parameters:
+          compose:
+            description: "Path to the docker compose test file to test"
+            type: string
+            default: "docker-compose.test.yml"
+        steps:
+        - run:
+            name: Install Docker Compose
+            command: |
+              if [ ! -e "/usr/local/bin/docker-compose" ]; then
+                echo "Installing latest Docker Compose..."
+                apk add --no-cache py-pip
+                pip install docker-compose
+              else
+                echo "Skipping installation of Docker Compose..."
+              fi
+        - run:
+            name: Run Docker compose tests
+            command: |
+              docker-compose -f "<< parameters.compose >>" up --exit-code-from sut --build --abort-on-container-exit
+      push:
+        parameters:
+          <<: *docker_tags_params
+        steps:
+        - deploy:
+            name: Push application Docker image
+            command: |
+              test ./env/load.sh -f && source ./env/load.sh
+              tags="<< parameters.tags >>"
+              for tag in $tags; do
+                docker push "$tag"
+              done
+    jobs:
+      build:
+        description: "Build Docker image"
+        executor:
+          name: default
+          docker_version: << parameters.docker_version >>
+        parameters:
+          <<: *docker_arg_params
+          <<: *attach_params
+          <<: *docker_build_params
+          <<: *docker_version_params
+        steps:
+        - build:
+            <<: *docker_build_args
+
+      build_test:
+        description: "Build Docker image"
+        executor:
+          name: default
+          docker_version: << parameters.docker_version >>
+        parameters:
+          <<: *docker_arg_params
+          <<: *attach_params
+          <<: *docker_build_params
+          <<: *docker_tags_params
+          <<: *docker_version_params
+          compose:
+            description: "Path to the docker compose test file to test"
+            type: string
+            default: "docker-compose.test.yml"
+        steps:
+        - build:
+            <<: *docker_build_args
+        - tag:
+            tags: << parameters.tags >>
+            base_tag: << parameters.base_tag >>
+        - test:
+            compose: << parameters.compose >>
+
+      build_push:
+        description: "Build and push Docker image"
+        executor:
+          name: default
+          docker_version: << parameters.docker_version >>
+        parameters:
+          <<: *docker_arg_params
+          <<: *attach_params
+          <<: *docker_build_params
+          <<: *docker_tags_params
+          <<: *docker_version_params
+          <<: *docker_login_params
+        steps:
+        - build:
+            <<: *docker_build_args
+        - when:
+            condition: true
+            # Use this instead once CircleCI-Public/config-preview-sdk#15 is merged
+            # matches: ['([\w-\/.:]+)?(,[\w-\/.:]+)*', "<< parameters.tags >>"]
+            steps:
+            - tag:
+                tags: << parameters.tags >>
+                base_tag: << parameters.base_tag >>
+            - login:
+                login: << parameters.login >>
+            - push:
+                tags: << parameters.tags >>
+
+      build_test_push:
+        description: "Build and push Docker image"
+        executor:
+          name: default
+          docker_version: << parameters.docker_version >>
+        parameters:
+          <<: *docker_arg_params
+          <<: *attach_params
+          <<: *docker_build_params
+          <<: *docker_tags_params
+          <<: *docker_version_params
+          <<: *docker_login_params
+          compose:
+            description: "Path to the docker compose test file to test"
+            type: string
+            default: "docker-compose.test.yml"
+        steps:
+        - build:
+            <<: *docker_build_args
+        - when:
+            condition: true
+            # Use this instead once CircleCI-Public/config-preview-sdk#15 is merged
+            # matches: ['([\w-\/.:]+)?(,[\w-\/.:]+)*', "<< parameters.tags >>"]
+            steps:
+            - tag:
+                tags: << parameters.tags >>
+                base_tag: << parameters.base_tag >>
+            - test:
+                compose: << parameters.compose >>
+            - login:
+                login: << parameters.login >>
+            - push:
+                tags: << parameters.tags >>
+
+git_job: &git_job
+  compose: docker-compose.test.yml
+  context: docker-hub
+  base_tag: funkygit
+  add_labels: true
+  docker_version: 18.06.1
+  login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+  use_args: true
+  args: "VERSION=latest"
+
+master_filter: &master_filter
+  filters:
+    branches:
+      only:
+      - master
+
+version: 2.1
+workflows:
+  readme:
+    jobs:
+    - readmyhuborb/update:
+        name: readme
+        <<: *master_filter
+        version: 1.1.0
+        context: docker-hub
+  build_latest:
+    jobs:
+    - dockerorb/build_test_push:
+        name: build_latest
+        <<: *master_filter
+        <<: *git_job
+        tags: "gofunky/git:latest,gofunky/git:daily"
+  build_daily:
+    # TODO
