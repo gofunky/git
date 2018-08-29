@@ -1,6 +1,5 @@
 version: '3.7'
 services:
   sut:
-    build:
-      image: funkygit
-      command: git --version
+    image: funkygit
+    command: git --version

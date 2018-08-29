@@ -413,6 +413,7 @@ orbs:
                 tags: << parameters.tags >>
 
 git_job: &git_job
+  attach: true
   compose: docker-compose.test.yml
   context: docker-hub
   base_tag: funkygit
@@ -421,6 +422,7 @@ git_job: &git_job
   login: docker login -u $DOCKER_USR -p $DOCKER_PWD
   use_args: true
   args: "VERSION=latest"
+  cache: true
 
 master_filter: &master_filter
   filters:
