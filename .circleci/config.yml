@@ -12,6 +12,15 @@ attach_args: &attach_args
   attach: << parameters.attach >>
   attach_at: << parameters.attach_at >>
 
+alpine_params: &alpine_params
+  alpine_version:
+    description: "Alpine version"
+    type: string
+    default: ""
+
+alpine_args: &alpine_args
+  alpine_version: << parameters.alpine_version >>
+
 docker_login_params: &docker_login_params
   login:
     description: "Login command to your repository (using environment variables from your secure context)"
@@ -103,7 +112,305 @@ readmyhub_update_params: &readmyhub_update_params
     type: boolean
     default: true
 
+envorb_prepare_params: &envorb_prepare_params
+  <<: *attach_params
+  checkout:
+    description: "Environment variable depends on a checkout"
+    type: boolean
+    default: false
+  prepare:
+    description: "Environment variable depends on preparation steps"
+    type: steps
+    default: []
+
+envorb_prepare_args: &envorb_prepare_args
+  <<: *attach_args
+  checkout: << parameters.checkout >>
+  prepare: << parameters.prepare >>
+
+envorb_params: &envorb_params
+  variable:
+    description: "Name of the variable"
+    type: string
+
+envorb_args: &envorb_args
+  variable: << parameters.variable >>
+
+envorb_value_params: &envorb_value_params
+  value:
+    description: "The variable value"
+    type: string
+
+envorb_value_args: &envorb_value_args
+  value: << parameters.value >>
+
+envorb_cmd_params: &envorb_cmd_params
+  cmd:
+    description: "Command that generates the variable"
+    type: string
+
+envorb_cmd_args: &envorb_cmd_args
+  cmd: << parameters.cmd >>
+
+envorb_http_params: &envorb_http_params
+  address:
+    description: "HTTP address that contains the variable"
+    type: string
+
+envorb_http_args: &envorb_http_args
+  address: << parameters.address >>
+
 orbs:
+  envorb:
+    executors:
+      default:
+        parameters:
+          <<: *alpine_params
+        docker:
+        - image: gofunky/git:latest # TODO
+    commands:
+      prepare:
+        parameters:
+          <<: *envorb_prepare_params
+          <<: *envorb_params
+        steps:
+        - run:
+            name: Check variable name
+            command: |
+              if [ -e "./env/<< parameters.variable >>.sh" ]; then
+                echo "Variable naming conflict"
+                exit 1
+              fi
+        - when:
+            condition: << parameters.checkout >>
+            steps:
+            - checkout
+        - when:
+            condition: << parameters.attach >>
+            steps:
+            - attach_workspace:
+                at: << parameters.attach_at >>
+        - steps: << parameters.prepare >>
+        - run:
+            name: Create store
+            command: |
+              mkdir -pv ./env
+              echo "0.1.0" > ./env/ENVORB_VERSION.env
+              echo "for file in \"\$(find ${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';')\"; do export \${file}=\"\$(cat $PWD/env/\${file}.env)\"; done" > ./env/load.sh
+              chmod +x ./env/load.sh
+
+      value:
+        parameters:
+          <<: *envorb_value_params
+          <<: *envorb_params
+        steps:
+        - run:
+            name: Set variable value
+            command: |
+              source ./env/load.sh
+              export << parameters.variable >>="<< parameters.value >>"
+              echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
+
+      cmd:
+        parameters:
+          <<: *envorb_cmd_params
+          <<: *envorb_params
+        steps:
+        - run:
+            name: Execute command
+            command: |
+              source ./env/load.sh
+              export << parameters.variable >>=$(<< parameters.cmd >>)
+              echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
+
+      http:
+        parameters:
+          <<: *envorb_http_params
+          <<: *envorb_params
+        steps:
+        - run:
+            name: Fetch HTTP
+            command: |
+              source ./env/load.sh
+              export << parameters.variable >>=$(wget -O - << parameters.address >>)
+              echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
+
+      match_version:
+        parameters:
+          <<: *envorb_params
+        steps:
+        - run:
+            name: Match the semantic version
+            command: |
+              source ./env/load.sh
+              << parameters.variable >>=$(${<< parameters.variable >>} | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
+              echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
+
+      complete:
+        parameters:
+          <<: *envorb_params
+        steps:
+        - persist_to_workspace:
+            root: .
+            paths:
+            - env/load.sh
+            - env/<< parameters.variable >>.env
+
+    jobs:
+      value:
+        description: "Set the variable value as specified"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          <<: *envorb_value_params
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - value:
+            <<: *envorb_args
+            <<: *envorb_value_args
+        - complete:
+            <<: *envorb_args
+
+      cmd:
+        description: "Derive the variable from the given command"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          <<: *envorb_cmd_params
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - cmd:
+            <<: *envorb_args
+            <<: *envorb_cmd_args
+        - complete:
+            <<: *envorb_args
+
+      http:
+        description: "Derive the variable from the given http address"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          <<: *envorb_http_params
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - http:
+            <<: *envorb_args
+            <<: *envorb_http_args
+        - complete:
+            <<: *envorb_args
+
+      cmd_version:
+        description: "Derive a semantic version from the given command"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          <<: *envorb_cmd_params
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - cmd:
+            <<: *envorb_args
+            <<: *envorb_cmd_args
+        - match_version:
+            <<: *envorb_args
+        - complete:
+            <<: *envorb_args
+
+      http_version:
+        description: "Derive a semantic version from the given http address"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          <<: *envorb_http_params
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - http:
+            <<: *envorb_args
+            <<: *envorb_http_args
+        - match_version:
+            <<: *envorb_args
+        - complete:
+            <<: *envorb_args
+
+      github:
+        description: "Derive the version from the github.com tag"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          repository:
+            description: "Repository in the format 'org/repo'"
+            type: string
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - http:
+            <<: *envorb_args
+            address: https://api.github.com/repos/<< parameters.repository >>/releases/latest
+        - cmd:
+            cmd: "${<< parameters.variable >>} | grep -o '\"tag_name\": \"\\K.*?(?=\")'"
+        - match_version:
+            <<: *envorb_args
+        - complete:
+            <<: *envorb_args
+
+      git_tag:
+        description: "Derive the version from the latest git tag"
+        parameters:
+          <<: *envorb_params
+          <<: *envorb_prepare_params
+          <<: *alpine_params
+          repository:
+            description: "Path to the local git repository"
+            type: string
+            default: "."
+        executor:
+          name: default
+          <<: *alpine_args
+        steps:
+        - prepare:
+            <<: *envorb_args
+            <<: *envorb_prepare_args
+        - cmd:
+            cmd: cd ${<< parameters.repository >>} && git describe --abbrev=0 --tags
+        - match_version:
+            <<: *envorb_args
+        - complete:
+            <<: *envorb_args
+
   readmyhuborb:
     executors:
       default:
@@ -232,7 +539,7 @@ orbs:
             - run:
                 name: Build Docker image with arguments and labels
                 command: |
-                  test ./env/load.sh -f && source ./env/load.sh
+                  ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
                   buildarg=""
                   args="<< parameters.args >><<# parameters.add_labels >>,BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"`,VCS_REF=`git rev-parse --short HEAD`<</ parameters.add_labels >>"
                   for arg in $args; do
@@ -248,7 +555,7 @@ orbs:
             - run:
                 name: Build Docker image without arguments and with labels
                 command: |
-                  test ./env/load.sh -f && source ./env/load.sh
+                  ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
                   docker build <<# parameters.add_labels >>--build-arg BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"` --build-arg VCS_REF=`git rev-parse --short HEAD` <</ parameters.add_labels >>--cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>
         - when:
             condition: << parameters.cache >>
@@ -273,7 +580,7 @@ orbs:
         - run:
             name: Add Docker tags
             command: |
-              test ./env/load.sh -f && source ./env/load.sh
+              ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
               tags="<< parameters.tags >>"
               for tag in $tags; do
                 docker tag << parameters.base_tag >> "$tag"
@@ -306,7 +613,7 @@ orbs:
         - deploy:
             name: Push application Docker image
             command: |
-              test ./env/load.sh -f && source ./env/load.sh
+              ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
               tags="<< parameters.tags >>"
               for tag in $tags; do
                 docker push "$tag"
@@ -441,10 +748,23 @@ workflows:
         context: docker-hub
   build_latest:
     jobs:
+    - envorb/cmd_version:
+        name: set_git_version
+        attach: true
+        alpine_version: "3.8"
+        variable: GIT_VERSION
+        prepare:
+          - run:
+              name: Update git
+              command: |
+                apk add --no-cache --upgrade git
+        cmd: git --version
     - dockerorb/build_test_push:
         name: build_latest
         <<: *master_filter
         <<: *git_job
-        tags: "gofunky/git:latest,gofunky/git:daily"
+        tags: "gofunky/git:${GIT_VERSION},gofunky/git:latest"
+        requires:
+          - set_git_version
   #build_daily:
     # TODO
