@@ -782,8 +782,8 @@ master_filter: &master_filter
 pr_filter: &pr_filter
   filters:
     branches:
-      only:
-      - /^pull.*/
+      ignore:
+      - master
 
 set_git_version: &set_git_version
   attach: true
