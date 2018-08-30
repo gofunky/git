@@ -167,7 +167,7 @@ orbs:
         parameters:
           <<: *alpine_params
         docker:
-        - image: gofunky/git:latest # TODO update version
+        - image: gofunky/git:envload
     commands:
       prepare:
         parameters:
@@ -836,7 +836,7 @@ workflows:
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         add_labels: false
-        file: "Dockerfile.envload"
+        file: "./orbs/envorb/Dockerfile"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
@@ -852,6 +852,20 @@ workflows:
         requires:
         - set_git_version
         - set_alpine_version
+    - dockerorb/build_test:
+        name: test_envload
+        <<: *pr_filter
+        <<: *git_job
+        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
+        add_labels: false
+        file: "./orbs/envorb/Dockerfile"
+        compose: "./orbs/envorb/test/docker-compose.test.yml"
+        base_tag: gittest
+        args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
+        requires:
+        - set_git_version
+        - set_alpine_version
+        - test_latest
   build_daily:
     triggers:
     - schedule:
@@ -870,6 +884,7 @@ workflows:
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable,gofunky/git:daily"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+        cache: true
         requires:
-        - set_git_version
-        - set_alpine_version
+        - daily_set_git_version
+        - daily_set_alpine_version
