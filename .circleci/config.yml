@@ -167,7 +167,7 @@ orbs:
         parameters:
           <<: *alpine_params
         docker:
-        - image: gofunky/git:latest # TODO
+        - image: gofunky/git:latest # TODO update version
     commands:
       prepare:
         parameters:
@@ -177,7 +177,7 @@ orbs:
         - run:
             name: Check variable name
             command: |
-              if [ -e "./env/<< parameters.variable >>.sh" ]; then
+              if [ -e "./env/<< parameters.variable >>.env" ]; then
                 echo "Variable naming conflict"
                 exit 1
               fi
@@ -185,6 +185,16 @@ orbs:
             condition: << parameters.checkout >>
             steps:
             - checkout
+            - run:
+                name: Check for submodules
+                command: |
+                  if [ -e "./.gitmodules" ]; then
+                    echo "Checking out detected submodules..."
+                    git submodule sync
+                    git submodule update --init
+                  else
+                    echo "SKIPPING..."
+                  fi
         - when:
             condition: << parameters.attach >>
             steps:
@@ -192,13 +202,15 @@ orbs:
                 at: << parameters.attach_at >>
         - steps: << parameters.prepare >>
         - run:
-            name: Create store
+            name: Deploy envorb store
             command: |
               mkdir -pv ./env
-              echo "0.1.0" > ./env/ENVORB_VERSION.env
-              echo "OLD_IFS=\${IFS} && IFS=';' && for file in \$(find \${PWD}/env -maxdepth 1 -iname '*.env' -exec basename {} .env ';' | tr '\n' ';'); do export \${file}=\"\$(cat \${PWD}/env/\${file}.env)\"; done && IFS=\${OLD_IFS}" > ./env/load.sh
-              chmod +x ./env/load.sh
-
+              echo "0.2.0" > ./env/ENVORB_VERSION.env
+              if [ ! -e "/usr/local/bin/envload" ]; then
+                echo "Installing envorb loader..."
+                wget -O /usr/local/bin/envload https://raw.githubusercontent.com/gofunky/orbs/master/envorb/load.sh
+                chmod +x /usr/local/bin/envload
+              fi
       value:
         parameters:
           <<: *envorb_value_params
@@ -207,7 +219,7 @@ orbs:
         - run:
             name: Set variable value
             command: |
-              source ./env/load.sh
+              source /usr/local/bin/envload
               export << parameters.variable >>="<< parameters.value >>"
               echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
@@ -220,7 +232,7 @@ orbs:
         - run:
             name: Execute command
             command: |
-              source ./env/load.sh
+              source /usr/local/bin/envload
               export << parameters.variable >>=$(<< parameters.cmd >>)
               echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
@@ -233,7 +245,7 @@ orbs:
         - run:
             name: Fetch HTTP
             command: |
-              source ./env/load.sh
+              source /usr/local/bin/envload
               export << parameters.variable >>=$(wget -O - << parameters.address >>)
               echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
@@ -245,7 +257,7 @@ orbs:
         - run:
             name: Match the semantic version
             command: |
-              source ./env/load.sh
+              source /usr/local/bin/envload
               << parameters.variable >>=$(${<< parameters.variable >>} | sed -nre 's/^[^0-9]*(([0-9]+\.)*[0-9]+).*/\1/p')
               echo "SET << parameters.variable >>: ${<< parameters.variable >>}"
               echo "${<< parameters.variable >>}" > ./env/<< parameters.variable >>.env
@@ -257,7 +269,6 @@ orbs:
         - persist_to_workspace:
             root: .
             paths:
-            - env/load.sh
             - env/<< parameters.variable >>.env
 
     jobs:
@@ -435,6 +446,16 @@ orbs:
         steps:
         - checkout
         - run:
+            name: Check for submodules
+            command: |
+              if [ -e "./.gitmodules" ]; then
+                echo "Checking out detected submodules..."
+                git submodule sync
+                git submodule update --init
+              else
+                echo "SKIPPING..."
+              fi
+        - run:
             name: Check DOCKER_USR
             command: |
               if [ -z "$DOCKER_USR" ]; then
@@ -516,12 +537,30 @@ orbs:
         steps:
         - checkout
         - setup_remote_docker
+        - run:
+            name: Check for submodules
+            command: |
+              if [ -e "./.gitmodules" ]; then
+                echo "Checking out detected submodules..."
+                git submodule sync
+                git submodule update --init
+              else
+                echo "SKIPPING..."
+              fi
         - when:
             condition: << parameters.attach >>
             steps:
             - attach_workspace:
                 at: << parameters.attach_at >>
         - steps: << parameters.prepare >>
+        - run:
+            name: Deploy envorb store
+            command: |
+              if [ ! -e "/usr/local/bin/envload" ]; then
+                echo "Installing envorb loader..."
+                wget -O /usr/local/bin/envload https://raw.githubusercontent.com/gofunky/orbs/master/envorb/load.sh
+                chmod +x /usr/local/bin/envload
+              fi
         - when:
             condition: << parameters.cache >>
             steps:
@@ -543,7 +582,7 @@ orbs:
             - run:
                 name: Build Docker image with arguments and labels
                 command: |
-                  ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
+                  source /usr/local/bin/envload
                   buildarg=""
                   args="<< parameters.args >><<# parameters.add_labels >>,BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"`,VCS_REF=`git rev-parse --short HEAD`<</ parameters.add_labels >>"
                   for arg in $args; do
@@ -559,7 +598,7 @@ orbs:
             - run:
                 name: Build Docker image without arguments and with labels
                 command: |
-                  ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
+                  source /usr/local/bin/envload
                   docker build <<# parameters.add_labels >>--build-arg BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"` --build-arg VCS_REF=`git rev-parse --short HEAD` <</ parameters.add_labels >>--cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>
         - when:
             condition: << parameters.cache >>
@@ -584,7 +623,7 @@ orbs:
         - run:
             name: Add Docker tags
             command: |
-              ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
+              source /usr/local/bin/envload
               tags="<< parameters.tags >>"
               for tag in $tags; do
                 docker tag << parameters.base_tag >> "$tag"
@@ -604,7 +643,7 @@ orbs:
                 apk add --no-cache py-pip
                 pip install docker-compose
               else
-                echo "Skipping installation of Docker Compose..."
+                echo "SKIPPING..."
               fi
         - run:
             name: Run Docker compose tests
@@ -617,7 +656,7 @@ orbs:
         - deploy:
             name: Push application Docker image
             command: |
-              ls ./env/load.sh >> /dev/null 2>&1 && source ./env/load.sh
+              source /usr/local/bin/envload
               tags="<< parameters.tags >>"
               for tag in $tags; do
                 docker push "$tag"
