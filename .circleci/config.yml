@@ -588,7 +588,7 @@ orbs:
                   for arg in $args; do
                     buildarg="${buildarg} --build-arg ${arg}"
                   done
-                  build="docker build ${buildarg} --cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>"
+                  build="docker build ${buildarg} --cache-from << parameters.base_tag >> -f << parameters.path >>/<< parameters.file >> -t << parameters.base_tag >> << parameters.path >>"
                   eval $build
         - unless:
             condition: << parameters.use_args >>
@@ -599,7 +599,7 @@ orbs:
                 name: Build Docker image without arguments and with labels
                 command: |
                   source /usr/local/bin/envload
-                  docker build <<# parameters.add_labels >>--build-arg BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"` --build-arg VCS_REF=`git rev-parse --short HEAD` <</ parameters.add_labels >>--cache-from=<< parameters.base_tag >> -f << parameters.file >> -t << parameters.base_tag >> << parameters.path >>
+                  docker build <<# parameters.add_labels >>--build-arg BUILD_DATE=`date -u +\"%Y-%m-%dT%H:%M:%SZ\"` --build-arg VCS_REF=`git rev-parse --short HEAD` <</ parameters.add_labels >>--cache-from << parameters.base_tag >> -f << parameters.path >>/<< parameters.file >> -t << parameters.base_tag >> << parameters.path >>
         - when:
             condition: << parameters.cache >>
             steps:
