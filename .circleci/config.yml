@@ -200,7 +200,6 @@ orbs:
             steps:
             - attach_workspace:
                 at: << parameters.attach_at >>
-        - steps: << parameters.prepare >>
         - run:
             name: Deploy envorb store
             command: |
@@ -211,6 +210,7 @@ orbs:
                 wget -O /usr/local/bin/envload https://raw.githubusercontent.com/gofunky/orbs/master/envorb/load.sh
                 chmod +x /usr/local/bin/envload
               fi
+        - steps: << parameters.prepare >>
       value:
         parameters:
           <<: *envorb_value_params
@@ -552,7 +552,6 @@ orbs:
             steps:
             - attach_workspace:
                 at: << parameters.attach_at >>
-        - steps: << parameters.prepare >>
         - run:
             name: Deploy envorb store
             command: |
@@ -561,6 +560,7 @@ orbs:
                 wget -O /usr/local/bin/envload https://raw.githubusercontent.com/gofunky/orbs/master/envorb/load.sh
                 chmod +x /usr/local/bin/envload
               fi
+        - steps: << parameters.prepare >>
         - when:
             condition: << parameters.cache >>
             steps:
