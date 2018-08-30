@@ -765,11 +765,10 @@ orbs:
 git_job: &git_job
   attach: true
   compose: docker-compose.test.yml
-  context: docker-hub
   base_tag: funkygit
   add_labels: true
   docker_version: 18.06.1
-  login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+  context: docker-hub
   use_args: true
   args: "VERSION=latest,ALPINE=${ALPINE_VERSION}"
   cache: true
@@ -825,6 +824,7 @@ workflows:
         <<: *master_filter
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
+        login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         requires:
           - set_git_version
           - set_alpine_version
@@ -853,6 +853,7 @@ workflows:
         <<: *master_filter
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable,gofunky/git:daily"
+        login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         requires:
         - set_git_version
         - set_alpine_version
