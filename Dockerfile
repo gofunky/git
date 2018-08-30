@@ -2,9 +2,6 @@ ARG ALPINE=latest
 FROM alpine:${ALPINE}
 MAINTAINER matfax <mat@fax.fyi>
 
-ADD ./orbs/envorb/load.sh /usr/local/bin/envload
-RUN chmod +x /usr/local/bin/envload
-
 ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
