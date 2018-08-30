@@ -392,6 +392,7 @@ orbs:
         - prepare:
             <<: *envorb_args
             <<: *envorb_prepare_args
+            checkout: true
         - http:
             <<: *envorb_args
             address: https://api.github.com/repos/<< parameters.repository >>/releases/latest
