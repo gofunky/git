@@ -839,7 +839,7 @@ workflows:
         file: "./orbs/envorb/Dockerfile"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
-        args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
+        args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
         - set_git_version
         - set_alpine_version
@@ -861,7 +861,7 @@ workflows:
         file: "./orbs/envorb/Dockerfile"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
-        args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
+        args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
         - set_git_version
         - set_alpine_version
