@@ -770,8 +770,7 @@ git_job: &git_job
   docker_version: 18.06.1
   context: docker-hub
   use_args: true
-  args: "VERSION=latest,ALPINE=${ALPINE_VERSION}"
-  cache: true
+  args: "VERSION=${GIT_VERSION},ALPINE=${ALPINE_VERSION}"
 
 master_filter: &master_filter
   filters:
@@ -825,6 +824,7 @@ workflows:
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+        cache: true
         requires:
           - set_git_version
           - set_alpine_version
@@ -834,14 +834,15 @@ workflows:
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+        cache: true
         file: "Dockerfile.envload"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
+        base_tag: gittest
+        args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
         prepare:
         - run:
-            name: "Set base arg"
-            command: |
-              source /usr/local/bin/envload
-              echo "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}" > ./orbs/envorb/test/.env
+            name: "Set compose test base"
+            command: echo "BASE=gittest" > ./orbs/envorb/test/.env
         requires:
         - set_git_version
         - set_alpine_version
