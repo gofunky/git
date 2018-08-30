@@ -392,7 +392,6 @@ orbs:
         - prepare:
             <<: *envorb_args
             <<: *envorb_prepare_args
-            checkout: true
         - http:
             <<: *envorb_args
             address: https://api.github.com/repos/<< parameters.repository >>/releases/latest
@@ -421,9 +420,10 @@ orbs:
         - prepare:
             <<: *envorb_args
             <<: *envorb_prepare_args
+            checkout: true
         - cmd:
             <<: *envorb_args
-            cmd: cd ${<< parameters.repository >>} && git describe --abbrev=0 --tags
+            cmd: cd << parameters.repository >> && git describe --abbrev=0 --tags
         - match_version:
             <<: *envorb_args
         - complete:
