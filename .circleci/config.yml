@@ -836,7 +836,7 @@ workflows:
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         add_labels: false
-        file: "./orbs/envorb/Dockerfile"
+        path: "./orbs/envorb"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
@@ -858,7 +858,7 @@ workflows:
         <<: *git_job
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
         add_labels: false
-        file: "./orbs/envorb/Dockerfile"
+        path: "./orbs/envorb"
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
