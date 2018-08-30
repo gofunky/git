@@ -828,6 +828,24 @@ workflows:
         requires:
           - set_git_version
           - set_alpine_version
+    - dockerorb/build_test_push:
+        name: build_envload
+        <<: *master_filter
+        <<: *git_job
+        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
+        login: docker login -u $DOCKER_USR -p $DOCKER_PWD
+        file: "Dockerfile.envload"
+        compose: "./orbs/envorb/test/docker-compose.test.yml"
+        prepare:
+        - run:
+            name: "Set base arg"
+            command: |
+              source /usr/local/bin/envload
+              echo "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}" > ./orbs/envorb/test/.env
+        requires:
+        - set_git_version
+        - set_alpine_version
+        - build_latest
     - dockerorb/build_test:
         name: test_latest
         <<: *pr_filter
