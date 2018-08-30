@@ -840,10 +840,6 @@ workflows:
         compose: "./orbs/envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE_VERSION=${GIT_VERSION}-alpine${ALPINE_VERSION}"
-        prepare:
-        - run:
-            name: "Set compose test base"
-            command: echo "BASE=gittest" > .env
         requires:
         - set_git_version
         - set_alpine_version
