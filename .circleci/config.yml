@@ -1,14 +1,5 @@
 version: 2.1
 
-orbs:
-  orbtools: gofunky/orbtools@0.1.0
-
-  envorb: gofunky/envorb@0.2.6
-
-  readmyhub: gofunky/readmyhub@dev
-
-  docker: gofunky/docker@0.0.1
-
 git_job: &git_job
   attach: true
   compose: docker-compose.test.yml
@@ -36,10 +27,10 @@ set_git_version: &set_git_version
   alpine_version: "3.8"
   variable: GIT_VERSION
   prepare:
-  - run:
-      name: Update git
-      command: |
-        apk add --no-cache --upgrade git
+    - run:
+        name: Update git
+        command: |
+          apk add --no-cache --upgrade git
   cmd: git --version
 
 set_alpine_version: &set_alpine_version
@@ -48,11 +39,20 @@ set_alpine_version: &set_alpine_version
   variable: ALPINE_VERSION
   value: "3.8"
 
+orbs:
+  orbtools: gofunky/orbtools@0.1.0
+
+  envorb: gofunky/envorb@0.2.6
+
+  readmyhub: gofunky/readmyhub@dev
+
+  docker: gofunky/docker@0.0.1
+
 workflows:
   readme:
     jobs:
       - readmyhub/update:
-        name: readme
+        name: update_readme
         <<: *master_filter
         version: 1.1.0
         context: docker-hub
@@ -66,8 +66,7 @@ workflows:
         <<: *set_alpine_version
     - docker/build_test_push:
         name: build_latest
-        <<: *master_filter
-        <<: *git_job
+        <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
@@ -76,8 +75,7 @@ workflows:
           - set_alpine_version
     - docker/build_test_push:
         name: build_envload
-        <<: *master_filter
-        <<: *git_job
+        <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
@@ -92,16 +90,14 @@ workflows:
         - build_latest
     - docker/build_test:
         name: test_latest
-        <<: *pr_filter
-        <<: *git_job
+        <<: [*pr_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         requires:
         - set_git_version
         - set_alpine_version
     - docker/build_test:
         name: test_envload
-        <<: *pr_filter
-        <<: *git_job
+        <<: [*pr_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
         add_labels: false
         path: "./envorb"
@@ -126,8 +122,7 @@ workflows:
         <<: *set_alpine_version
     - docker/build_test_push:
         name: daily_build_latest
-        <<: *master_filter
-        <<: *git_job
+        <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable,gofunky/git:daily"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
