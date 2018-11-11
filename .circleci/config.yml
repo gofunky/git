@@ -7,7 +7,6 @@ git_job: &git_job
   add_labels: true
   docker_version: 18.09.0
   context: docker-hub
-  use_args: true
   args: "VERSION=${GIT_VERSION},ALPINE=${ALPINE_VERSION}"
 
 master_filter: &master_filter
