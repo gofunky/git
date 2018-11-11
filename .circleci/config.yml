@@ -65,6 +65,7 @@ workflows:
         <<: *set_alpine_version
     - docker/build_test_push:
         pre-steps:
+          - run: mkdir .env
           - run: echo "3.8" > ./.env/ALPINE_VERSION.env
           - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_latest
@@ -77,6 +78,7 @@ workflows:
           - set_alpine_version
     - docker/build_test_push:
         pre-steps:
+          - run: mkdir .env
           - run: echo "3.8" > ./.env/ALPINE_VERSION.env
           - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_envload
