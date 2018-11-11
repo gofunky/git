@@ -45,7 +45,7 @@ orbs:
 
   #readmyhub: gofunky/readmyhub@dev
 
-  docker: gofunky/docker@0.0.4
+  docker: gofunky/docker@0.0.5
 
 jobs:
   migrate:
