@@ -61,12 +61,12 @@ workflows:
         name: set_git_version
         <<: *set_git_version
         post-steps:
-          - run: mv .env env
+          - run: mv env .env
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
         post-steps:
-          - run: mv .env env
+          - run: mv env .env
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
