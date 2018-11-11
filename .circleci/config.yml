@@ -47,6 +47,19 @@ orbs:
 
   docker: gofunky/docker@0.0.3
 
+commands:
+  migrate:
+    executor:
+      name: docker/default
+    steps:
+      - attach_workspace:
+          at: '.'
+      - run: mv ./env ./.env
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./.env
+
 workflows:
   #readme:
   #  jobs:
@@ -63,24 +76,21 @@ workflows:
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
+    - migrate:
+        requires:
+          - set_git_version
+          - set_alpine_version
     - docker/build_test_push:
-        pre-steps:
-          - run: mkdir .env
-          - run: echo "3.8" > ./.env/ALPINE_VERSION.env
-          - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_latest
         <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         requires:
+          - migrate
           - set_git_version
           - set_alpine_version
     - docker/build_test_push:
-        pre-steps:
-          - run: mkdir .env
-          - run: echo "3.8" > ./.env/ALPINE_VERSION.env
-          - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_envload
         <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
@@ -92,9 +102,10 @@ workflows:
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
-        - set_git_version
-        - set_alpine_version
-        - build_latest
+          - migrate
+          - set_git_version
+          - set_alpine_version
+          - build_latest
     - docker/build_test:
         name: test_latest
         <<: [*pr_filter, *git_job]
