@@ -44,18 +44,18 @@ orbs:
 
   envorb: gofunky/envorb@0.2.6
 
-  readmyhub: gofunky/readmyhub@dev
+  #readmyhub: gofunky/readmyhub@dev
 
   docker: gofunky/docker@0.0.1
 
 workflows:
-  readme:
-    jobs:
-      - readmyhub/update:
-          name: update_readme
-          <<: *master_filter
-          version: 1.1.0
-          context: docker-hub
+  #readme:
+  #  jobs:
+  #    - readmyhub/update:
+  #        name: update_readme
+  #        <<: *master_filter
+  #        version: 1.1.0
+  #        context: docker-hub
   build_latest:
     jobs:
     - envorb/cmd_version:
