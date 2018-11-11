@@ -62,11 +62,19 @@ workflows:
         <<: *set_git_version
         post-steps:
           - run: mv env .env
+          - persist_to_workspace:
+            root: .
+            paths:
+              - ./.env/GIT_VERSION.env
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
         post-steps:
           - run: mv env .env
+          - persist_to_workspace:
+              root: .
+              paths:
+                - ./.env/ALPINE_VERSION.env
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
