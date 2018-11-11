@@ -60,22 +60,13 @@ workflows:
     - envorb/cmd_version:
         name: set_git_version
         <<: *set_git_version
-        post-steps:
-          - run: mv env .env
-          - persist_to_workspace:
-              root: .
-              paths:
-                - ./.env/GIT_VERSION.env
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
-        post-steps:
-          - run: mv env .env
-          - persist_to_workspace:
-              root: .
-              paths:
-                - ./.env/ALPINE_VERSION.env
     - docker/build_test_push:
+        pre-steps:
+          - run: echo "3.8" > ./.env/ALPINE_VERSION.env
+          - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_latest
         <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
@@ -85,6 +76,9 @@ workflows:
           - set_git_version
           - set_alpine_version
     - docker/build_test_push:
+        pre-steps:
+          - run: echo "3.8" > ./.env/ALPINE_VERSION.env
+          - run: echo "2.18.1" > ./.env/GIT_VERSION.env
         name: build_envload
         <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
