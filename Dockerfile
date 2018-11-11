@@ -1,6 +1,6 @@
 ARG ALPINE=latest
 FROM alpine:${ALPINE}
-MAINTAINER matfax <mat@fax.fyi>
+LABEL maintainer="mat@fax.fyi"
 
 ARG VERSION
 ARG BUILD_DATE
