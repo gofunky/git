@@ -47,7 +47,7 @@ orbs:
 
   docker: gofunky/docker@0.0.3
 
-commands:
+jobs:
   migrate:
     executor:
       name: docker/default
