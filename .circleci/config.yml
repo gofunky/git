@@ -63,9 +63,9 @@ workflows:
         post-steps:
           - run: mv env .env
           - persist_to_workspace:
-            root: .
-            paths:
-              - ./.env/GIT_VERSION.env
+              root: .
+              paths:
+                - ./.env/GIT_VERSION.env
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
