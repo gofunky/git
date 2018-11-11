@@ -47,20 +47,6 @@ orbs:
 
   docker: gofunky/docker@0.0.5
 
-jobs:
-  migrate:
-    executor:
-      name: docker/default
-    steps:
-      - attach_workspace:
-          at: '.'
-      - run: mv ./env ./.envs
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./.envs/ALPINE_VERSION.env
-            - ./.envs/GIT_VERSION.env
-
 workflows:
   #readme:
   #  jobs:
@@ -77,10 +63,6 @@ workflows:
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
-    - migrate:
-        requires:
-          - set_git_version
-          - set_alpine_version
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
@@ -88,7 +70,6 @@ workflows:
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         requires:
-          - migrate
           - set_git_version
           - set_alpine_version
     - docker/build_test_push:
@@ -103,7 +84,6 @@ workflows:
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
-          - migrate
           - set_git_version
           - set_alpine_version
           - build_latest
