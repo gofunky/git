@@ -58,7 +58,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - ./.env
+            - ./.env/ALPINE_VERSION.env
+            - ./.env/GIT_VERSION.env
 
 workflows:
   #readme:
@@ -88,8 +89,6 @@ workflows:
         cache: true
         requires:
           - migrate
-          - set_git_version
-          - set_alpine_version
     - docker/build_test_push:
         name: build_envload
         <<: [*master_filter, *git_job]
@@ -103,8 +102,6 @@ workflows:
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
           - migrate
-          - set_git_version
-          - set_alpine_version
           - build_latest
     - docker/build_test:
         name: test_latest
