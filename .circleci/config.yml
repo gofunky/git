@@ -45,7 +45,7 @@ orbs:
 
   #readmyhub: gofunky/readmyhub@dev
 
-  docker: gofunky/docker@0.0.3
+  docker: gofunky/docker@0.0.4
 
 jobs:
   migrate:
@@ -89,6 +89,8 @@ workflows:
         cache: true
         requires:
           - migrate
+          - set_git_version
+          - set_alpine_version
     - docker/build_test_push:
         name: build_envload
         <<: [*master_filter, *git_job]
@@ -102,6 +104,8 @@ workflows:
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
         requires:
           - migrate
+          - set_git_version
+          - set_alpine_version
           - build_latest
     - docker/build_test:
         name: test_latest
