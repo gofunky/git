@@ -1,5 +1,5 @@
 ARG ALPINE=latest
-FROM alpine:${ALPINE}
+FROM alpine:$ALPINE
 LABEL maintainer="mat@fax.fyi"
 
 ARG VERSION
