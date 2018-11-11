@@ -54,12 +54,12 @@ jobs:
     steps:
       - attach_workspace:
           at: '.'
-      - run: mv ./env ./.env
+      - run: mv ./env ./.envs
       - persist_to_workspace:
           root: .
           paths:
-            - ./.env/ALPINE_VERSION.env
-            - ./.env/GIT_VERSION.env
+            - ./.envs/ALPINE_VERSION.env
+            - ./.envs/GIT_VERSION.env
 
 workflows:
   #readme:
