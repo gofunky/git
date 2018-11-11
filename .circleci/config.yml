@@ -52,10 +52,10 @@ workflows:
   readme:
     jobs:
       - readmyhub/update:
-        name: update_readme
-        <<: *master_filter
-        version: 1.1.0
-        context: docker-hub
+          name: update_readme
+          <<: *master_filter
+          version: 1.1.0
+          context: docker-hub
   build_latest:
     jobs:
     - envorb/cmd_version:
