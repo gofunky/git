@@ -39,9 +39,9 @@ set_alpine_version: &set_alpine_version
   value: "3.8"
 
 orbs:
-  orbtools: gofunky/orbtools@0.1.0
+  orbtools: gofunky/orbtools@0.1.1
 
-  envorb: gofunky/envorb@0.2.6
+  envorb: gofunky/envorb@0.3.2
 
   #readmyhub: gofunky/readmyhub@dev
 
