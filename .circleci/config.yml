@@ -2,7 +2,6 @@ version: 2.1
 
 git_job: &git_job
   attach: true
-  compose: docker-compose.test.yml
   base_tag: funkygit
   add_labels: true
   docker_version: 18.09.0
