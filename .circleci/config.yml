@@ -68,7 +68,7 @@ workflows:
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
+        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:alpine${ALPINE_VERSION},gofunky/git:latest"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         requires: [set_git_version, set_alpine_version]
@@ -76,7 +76,7 @@ workflows:
     - docker/build_test_push:
         name: build_envload
         <<: [*master_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
+        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         add_labels: false
@@ -89,13 +89,13 @@ workflows:
     - docker/build_test:
         name: test_latest
         <<: [*pr_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
+        tags: "gofunky/git:latest"
         requires: [set_git_version, set_alpine_version]
 
     - docker/build_test:
         name: test_envload
         <<: [*pr_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload"
+        tags: "gofunky/git:envload"
         add_labels: false
         path: "./envorb"
         compose: "./envorb/test/docker-compose.test.yml"
@@ -121,7 +121,7 @@ workflows:
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable,gofunky/git:daily"
+        tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:alpine${ALPINE_VERSION},gofunky/git:latest,gofunky/git:stable-alpine${ALPINE_VERSION},gofunky/git:stable,gofunky/git:daily"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         requires: [set_git_version, set_alpine_version]
@@ -129,7 +129,7 @@ workflows:
     - docker/build_test_push:
         name: build_envload
         <<: [*master_filter, *git_job]
-        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:envload,gofunky/git:stable-envload"
+        tags: "gofunky/git:${GIT_VERSION}-envload,gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}-envload,gofunky/git:stable-alpine${ALPINE_VERSION}-envload,gofunky/git:envload,gofunky/git:alpine${ALPINE_VERSION}-envload,gofunky/git:stable-envload"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
         add_labels: false
