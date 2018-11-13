@@ -60,18 +60,19 @@ workflows:
     - envorb/cmd_version:
         name: set_git_version
         <<: *set_git_version
+
     - envorb/value:
         name: set_alpine_version
         <<: *set_alpine_version
+
     - docker/build_test_push:
         name: build_latest
         <<: [*master_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
         login: docker login -u $DOCKER_USR -p $DOCKER_PWD
         cache: true
-        requires:
-          - set_git_version
-          - set_alpine_version
+        requires: [set_git_version, set_alpine_version]
+
     - docker/build_test_push:
         name: build_envload
         <<: [*master_filter, *git_job]
@@ -83,17 +84,14 @@ workflows:
         compose: "./envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
-        requires:
-          - set_git_version
-          - set_alpine_version
-          - build_latest
+        requires: [set_git_version, set_alpine_version, build_latest]
+
     - docker/build_test:
         name: test_latest
         <<: [*pr_filter, *git_job]
         tags: "gofunky/git:${GIT_VERSION},gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION},gofunky/git:latest"
-        requires:
-        - set_git_version
-        - set_alpine_version
+        requires: [set_git_version, set_alpine_version]
+
     - docker/build_test:
         name: test_envload
         <<: [*pr_filter, *git_job]
@@ -103,15 +101,14 @@ workflows:
         compose: "./envorb/test/docker-compose.test.yml"
         base_tag: gittest
         args: "BASE=gofunky/git:${GIT_VERSION}-alpine${ALPINE_VERSION}"
-        requires:
-        - set_git_version
-        - set_alpine_version
-        - test_latest
+        requires: [set_git_version, set_alpine_version, test_latest]
+
   build_daily:
     triggers:
     - schedule:
         cron: "0 0 * * *"
         <<: *master_filter
+
     jobs:
     - envorb/cmd_version:
         name: set_git_version
