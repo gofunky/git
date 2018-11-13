@@ -1,5 +1,6 @@
 # git
-alpine docker image with git
+
+An Alpine Docker image containing git
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/ae28f78d89554f5f8a5d48a9fb6a9fff)](https://app.codacy.com/app/gofunky/git?utm_source=github.com&utm_medium=referral&utm_content=gofunky/git&utm_campaign=Badge_Grade_Settings)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=gofunky/git)](https://dependabot.com)
