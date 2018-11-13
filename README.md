@@ -9,4 +9,4 @@ An Alpine Docker image containing git
 [![Microbadger Layers](https://images.microbadger.com/badges/image/gofunky/git.svg)](https://microbadger.com/images/gofunky/git "Docker Layers")
 [![Docker Pulls](https://img.shields.io/docker/pulls/gofunky/git.svg)](https://hub.docker.com/r/gofunky/git)
 ![GitHub last commit](https://img.shields.io/github/last-commit/gofunky/git.svg)
-![GitHub License](https://img.shields.io/github/license/gofunky/git.svg)
+[![GitHub License](https://img.shields.io/github/license/gofunky/git.svg)](https://github.com/gofunky/git/blob/master/LICENSE)
