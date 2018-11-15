@@ -44,7 +44,7 @@ orbs:
 
   #readmyhub: gofunky/readmyhub@dev
 
-  docker: gofunky/docker@0.0.5
+  docker: gofunky/docker@0.2.1
 
 workflows:
   #readme:

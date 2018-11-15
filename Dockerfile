@@ -6,7 +6,7 @@ ARG VERSION
 ARG BUILD_DATE
 ARG VCS_REF
 
-RUN apk add --no-cache --upgrade git openssh ca-certificates grep gnupg
+RUN apk add --no-cache --upgrade git openssh ca-certificates grep
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-url="https://github.com/gofunky/git" \
