@@ -20,9 +20,12 @@ pr_filter: &pr_filter
       ignore:
         - master
 
+use_alpine_version: &use_alpine_version
+  alpine_version: "3.8"
+
 set_git_version: &set_git_version
   attach: true
-  alpine_version: "3.8"
+  <<: *use_alpine_version
   variable: GIT_VERSION
   prepare:
     - run:
@@ -33,13 +36,12 @@ set_git_version: &set_git_version
 
 set_alpine_version: &set_alpine_version
   attach: true
-  alpine_version: "3.8"
+  <<: *use_alpine_version
   variable: ALPINE_VERSION
   value: "3.8"
 
 orbs:
-  orbtools: gofunky/orbtools@0.3.2
-  envorb: gofunky/envorb@0.3.9
+  envorb: gofunky/envorb@dev:90
   docker: gofunky/docker@0.1.2
   readmyhub: gofunky/readmyhub@1.2.2
 
