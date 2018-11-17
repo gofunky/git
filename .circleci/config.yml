@@ -41,7 +41,7 @@ set_alpine_version: &set_alpine_version
   value: "3.8"
 
 orbs:
-  envorb: gofunky/envorb@dev:90
+  envorb: gofunky/envorb@0.3.10
   docker: gofunky/docker@0.1.2
   readmyhub: gofunky/readmyhub@1.2.2
 
